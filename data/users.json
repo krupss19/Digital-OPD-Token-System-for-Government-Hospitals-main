@@ -1,0 +1,6 @@
+{
+  "admin": { "password": "admin123", "role": "admin" },
+  "staff": { "password": "staff123", "role": "staff" },
+  "dr_ravi": { "password": "ravi123", "role": "staff" },
+  "manager": { "password": "manage123", "role": "admin" }
+}

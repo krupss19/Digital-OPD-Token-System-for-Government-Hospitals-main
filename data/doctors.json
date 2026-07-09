@@ -1,0 +1,16 @@
+[
+  {
+    "id": "doc1",
+    "name": "Dr. Prasad Raut",
+    "dept": "General OPD",
+    "startTime": "08:00",
+    "limit": 40
+  },
+  {
+    "id": "doc2",
+    "name": "Dr. Prabhat Sinha",
+    "dept": "Pediatrics",
+    "startTime": "09:00",
+    "limit": 30
+  }
+]
