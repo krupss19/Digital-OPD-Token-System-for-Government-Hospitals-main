@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -9,7 +11,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
+
+// Serve static files from 'public'
+app.use(express.static(path.join(__dirname, 'public')));
 
 const DATA_DIR = path.join(__dirname, 'data');
 const TOKENS_FILE = path.join(DATA_DIR, 'tokens.json');
@@ -17,6 +21,7 @@ const DOCTORS_FILE = path.join(DATA_DIR, 'doctors.json');
 const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
+// Ensure directories and files exist
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(TOKENS_FILE)) fs.writeFileSync(TOKENS_FILE, JSON.stringify({}));
 if (!fs.existsSync(DOCTORS_FILE)) {
@@ -31,12 +36,13 @@ if (!fs.existsSync(DOCTORS_FILE)) {
 if (!fs.existsSync(FEEDBACK_FILE)) fs.writeFileSync(FEEDBACK_FILE, JSON.stringify([]));
 if (!fs.existsSync(USERS_FILE)) {
   const defaultUsers = {
-    admin: { password: 'admin123', role: 'admin' },
-    staff: { password: 'staff123', role: 'staff' }
+    admin: { password: process.env.ADMIN_PASSWORD || 'admin123', role: 'admin' },
+    staff: { password: process.env.STAFF_PASSWORD || 'staff123', role: 'staff' }
   };
   fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
 }
 
+// Helpers
 function readTokens() { return JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf8')); }
 function writeTokens(data) { fs.writeFileSync(TOKENS_FILE, JSON.stringify(data, null, 2)); }
 function readDoctors() { return JSON.parse(fs.readFileSync(DOCTORS_FILE, 'utf8')); }
@@ -45,6 +51,9 @@ function readFeedback() { return JSON.parse(fs.readFileSync(FEEDBACK_FILE, 'utf8
 function writeFeedback(data) { fs.writeFileSync(FEEDBACK_FILE, JSON.stringify(data, null, 2)); }
 function readUsers() { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
 
+// ----- Routes -----
+
+// Login
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
@@ -57,6 +66,7 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// Doctors CRUD
 app.get('/api/doctors', (req, res) => {
   res.json({ doctors: readDoctors() });
 });
@@ -91,6 +101,7 @@ app.delete('/api/doctors/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// Tokens
 app.get('/api/tokens/counts', (req, res) => {
   const date = req.query.date || new Date().toISOString().slice(0, 10);
   const tokens = readTokens();
@@ -158,6 +169,8 @@ app.post('/api/tokens/reset', (req, res) => {
   writeTokens(tokens);
   res.json({ success: true });
 });
+
+// Feedback
 app.post('/api/feedback', (req, res) => {
   const { tokenNo, patientName, rating, comment } = req.body;
   if (!tokenNo || !rating) return res.status(400).json({ error: 'Missing tokenNo or rating' });
@@ -167,6 +180,18 @@ app.post('/api/feedback', (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Fallback: serve index.html for any unknown route (SPA support)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// ----- Vercel export -----
+// Export the app for Vercel serverless deployment
+module.exports = app;
+
+// Only listen when NOT on Vercel (local development)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
