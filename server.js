@@ -5,6 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,14 +16,18 @@ app.use(bodyParser.json());
 // Serve static files from 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-const DATA_DIR = path.join(__dirname, 'data');
+// Use /tmp for data on Vercel (writable), or local 'data' folder for dev
+const DATA_DIR = process.env.NODE_ENV === 'production' 
+  ? path.join(os.tmpdir(), 'opd-data') 
+  : path.join(__dirname, 'data');
+
 const TOKENS_FILE = path.join(DATA_DIR, 'tokens.json');
 const DOCTORS_FILE = path.join(DATA_DIR, 'doctors.json');
 const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 // Ensure directories and files exist
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(TOKENS_FILE)) fs.writeFileSync(TOKENS_FILE, JSON.stringify({}));
 if (!fs.existsSync(DOCTORS_FILE)) {
   const defaultDocs = [
@@ -180,16 +185,18 @@ app.post('/api/feedback', (req, res) => {
   res.json({ success: true });
 });
 
-// Fallback: serve index.html for any unknown route (SPA support)
+// Health check
+app.get('/health', (req, res) => res.send('OK'));
+
+// Fallback: serve index.html for any unknown route (SPA)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ----- Vercel export -----
-// Export the app for Vercel serverless deployment
+// Export for Vercel
 module.exports = app;
 
-// Only listen when NOT on Vercel (local development)
+// Listen locally only
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

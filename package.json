@@ -9,7 +9,7 @@
     "vercel-build": "echo Hello"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
