@@ -9,9 +9,10 @@
     "vercel-build": "echo Hello"
   },
   "engines": {
-    "node": "24.x"
+    "node": ">=18.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
